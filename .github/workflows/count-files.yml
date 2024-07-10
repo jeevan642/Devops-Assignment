@@ -1,0 +1,27 @@
+name: Count Files on Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  count-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Run file count script
+        id: file-count
+        run: |
+          bash ./count-files.sh .
+          echo "::set-output name=file_count::$(bash ./count-files.sh .)"
+
+      - name: Comment on pull request
+        if: always()
+        uses: unsplash/comment-on-pr@v1
+        with:
+          message: |
+            Number of files in the repository root directory: ${{ steps.file-count.outputs.file_count }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
