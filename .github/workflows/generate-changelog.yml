@@ -1,0 +1,61 @@
+name: Generate Changelog
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push events to the main branch
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Checkout the repository's code
+
+      - name: Determine last release
+        id: last_release
+        run: |
+          # Replace this with your own logic to determine the last release
+          last_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo "::set-output name=tag::$last_tag"
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Get commits since the last release
+          last_tag="${{ steps.last_release.outputs.tag }}"
+          if [ -z "$last_tag" ]; then
+            echo "No previous release found."
+            exit 0
+          fi
+          
+          changelog=$(git log --oneline --pretty=format:"%s" $last_tag..HEAD)
+
+          # Initialize variables for changelog sections
+          features=""
+          bug_fixes=""
+          other_changes=""
+
+          # Categorize commits based on keywords in commit messages
+          while IFS= read -r line; do
+            if [[ $line == *"feat:"* || $line == *"feature:"* ]]; then
+              features+="* ${line:6}\n"
+            elif [[ $line == *"fix:"* || $line == *"bug:"* ]]; then
+              bug_fixes+="* ${line:5}\n"
+            else
+              other_changes+="* ${line}\n"
+            fi
+          done <<< "$changelog"
+
+          # Print formatted changelog
+          echo "### Features:"
+          echo -e "$features"
+
+          echo "### Bug Fixes:"
+          echo -e "$bug_fixes"
+
+          echo "### Other Changes:"
+          echo -e "$other_changes"
+
+          # Store the changelog as an output for later use
+          echo "::set-output name=changelog::$features\n\n$bug_fixes\n\n$other_changes"
