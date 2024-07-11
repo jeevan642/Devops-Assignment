@@ -11,6 +11,7 @@ jobs:
     steps:
       - name: Check if files exist
         run: |
+              echo "Checking if required files exist..." && pwd
               required_files=("README.md" "LICENSE" ".gitignore")
               for file in "${required_files[@]}"; do
                 if [ ! -f "$file" ]; then
